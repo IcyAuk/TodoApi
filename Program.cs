@@ -1,9 +1,21 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+//add dbContext and enable database exceptions
+//Dependency Injection provides access to the dbContext
 builder.Services.AddDbContext<TodoDb>
     (opt => opt.UseInMemoryDatabase("TodoList"));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddOpenApiDocument(config =>
+{
+   config.DocumentName = "TodoAPI";
+   config.Title = "TodoAPI v1";
+   config.Version = "v1"; 
+});
+
 var app = builder.Build();
 
 app.MapGet("/todoitems",async(TodoDb db) =>
