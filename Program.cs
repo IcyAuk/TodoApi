@@ -24,7 +24,7 @@ if(app.Environment.IsDevelopment())
     app.UseSwaggerUi(config =>
     {
         config.DocumentTitle = "TodoAPI";
-        config.Path = "/swagger/";
+        config.Path = "/swagger";
         config.DocumentPath = "/swagger/{documentName}/swagger.json";
         config.DocExpansion = "list";
     });
