@@ -62,12 +62,18 @@ static async Task<IResult> GetTodo(int id, TodoDb db)
         : TypedResults.NotFound();
 }
 
-static async Task<IResult> CreateTodo(Todo todo, TodoDb db)
+static async Task<IResult> CreateTodo(TodoItemDTO todoItemDTO, TodoDb db)
 {
-    db.Todos.Add(todo);
+    var todoItem = new Todo
+    {
+        IsComplete = todoItemDTO.IsComplete,
+        Name = todoItemDTO.Name
+    };
+
+    db.Todos.Add(todoItem);
     await db.SaveChangesAsync();
     
-    return TypedResults.Created($"/todoitems/{todo.Id}",todo);
+    return TypedResults.Created($"/todoitems/{todoItem.Id}",todoItemDTO);
 }
 
 static async Task<IResult> UpdateTodo(int id, Todo inputTodo, TodoDb db)
