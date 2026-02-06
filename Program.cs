@@ -31,9 +31,12 @@ if(app.Environment.IsDevelopment())
 }
 
 var todoItems = app.MapGroup("/todoitems");
-
-todoItems.MapGet("/",async(TodoDb db) =>
-    await db.Todos.ToListAsync());
+todoItems.MapGet("/",GetAllTodos);
+todoItems.MapGet("/complete",GetCompleteTodos);
+todoItems.MapGet("/{id}",GetTodo);
+todoItems.MapPost("/",CreateTodo);
+todoItems.MapPut("/{id}",UpdateTodo);
+todoItems.MapDelete("/{id}",DeleteTodo);
 
 /*
 app: web app object
@@ -41,54 +44,55 @@ app: web app object
     delegate is a function/method stored in a var.
 
 */
-todoItems.MapGet("/complete",async(TodoDb db) =>
-    await db.Todos.Where(t => t.IsComplete).ToListAsync());
+static async Task<IResult> GetAllTodos(TodoDb db)
+{
+    return TypedResults.Ok(await db.Todos.ToArrayAsync());
+}
 
-/*
-Second param is very cramped.
-Async Lamba expression, pattern matching, terniary operator
-Pattern Matching is Todo todo checks if .FindAsync() returns non null Todo
-if true then assign 
-*/
-todoItems.MapGet("/{id}",
-    async(int id, TodoDb db) =>
-    await db.Todos.FindAsync(id)
-    is Todo todo
-    ? Results.Ok(todo)
-    : Results.NotFound());
+static async Task<IResult> GetCompleteTodos(TodoDb db)
+{
+    return TypedResults.Ok(await db.Todos.Where(t=>t.IsComplete).ToListAsync());
+}
 
-todoItems.MapPost("/",async (Todo todo, TodoDb db) =>
+static async Task<IResult> GetTodo(int id, TodoDb db)
+{
+    return await db.Todos.FindAsync(id)
+        is Todo todo
+        ? TypedResults.Ok(todo)
+        : TypedResults.NotFound();
+}
+
+static async Task<IResult> CreateTodo(Todo todo, TodoDb db)
 {
     db.Todos.Add(todo);
     await db.SaveChangesAsync();
     
-    return Results.Created($"/todoitems/{todo.Id}",todo);
-});
+    return TypedResults.Created($"/todoitems/{todo.Id}",todo);
+}
 
-todoItems.MapPut("/{id}", async (int id, Todo inputTodo, TodoDb db)=>
+static async Task<IResult> UpdateTodo(int id, Todo inputTodo, TodoDb db)
 {
-   var todo = await db.Todos.FindAsync(id);
+    var todo = await db.Todos.FindAsync(id);
+    
+    if (todo is null) return TypedResults.NotFound();
 
-   if (todo is null) return Results.NotFound();
+    todo.Name = inputTodo.Name;
+    todo.IsComplete = inputTodo.IsComplete;
 
-   todo.Name = inputTodo.Name;
-   todo.IsComplete = inputTodo.IsComplete; 
+    await db.SaveChangesAsync();
 
-   await db.SaveChangesAsync();
+    return TypedResults.NoContent();
+}
 
-   return Results.NoContent();
-});
-
-todoItems.MapDelete("/{id}", async (int id, TodoDb db) =>
+static async Task<IResult> DeleteTodo(int id, TodoDb db)
 {
-   if (await db.Todos.FindAsync(id) is Todo todo)
+    if (await db.Todos.FindAsync(id) is Todo todo)
     {
         db.Todos.Remove(todo);
         await db.SaveChangesAsync();
-        return Results.NoContent();
-    } 
-
-    return Results.NotFound();
-});
+        return TypedResults.NoContent();
+    }
+    return TypedResults.NotFound();
+}
 
 app.Run();
