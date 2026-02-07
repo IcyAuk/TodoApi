@@ -5,8 +5,9 @@ using Microsoft.Extensions.Options;
 var builder = WebApplication.CreateBuilder(args);
 //add dbContext and enable database exceptions
 //Dependency Injection provides access to the dbContext
+var connectionString = builder.Configuration.GetConnectionString("ContainerConnection");
 builder.Services.AddDbContext<TodoDb>
-    (opt => opt.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=TodoDb;Integrated Security=true;"));
+    (opt => opt.UseSqlServer(connectionString));
     //(opt => opt.UseInMemoryDatabase("TodoList"));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -19,6 +20,14 @@ builder.Services.AddOpenApiDocument(config =>
 });
 
 var app = builder.Build();
+
+//Apply migrations on startup
+//Only used in development environment or small projects.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TodoDb>();
+    db.Database.Migrate();
+}
 
 if(app.Environment.IsDevelopment())
 {
