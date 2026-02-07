@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 //add dbContext and enable database exceptions
 //Dependency Injection provides access to the dbContext
 builder.Services.AddDbContext<TodoDb>
-    (opt => opt.UseInMemoryDatabase("TodoList"));
+    (opt => opt.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=TodoDb;Integrated Security=true;"));
+    //(opt => opt.UseInMemoryDatabase("TodoList"));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -46,12 +48,22 @@ app: web app object
 */
 static async Task<IResult> GetAllTodos(TodoDb db)
 {
-    return TypedResults.Ok(await db.Todos.ToArrayAsync());
+    return TypedResults.Ok(
+        await db.Todos
+        //foreach todo in db.Todos
+            .Select(todo => new TodoItemDTO(todo))
+            .ToArrayAsync()
+    );
 }
 
 static async Task<IResult> GetCompleteTodos(TodoDb db)
 {
-    return TypedResults.Ok(await db.Todos.Where(t=>t.IsComplete).ToListAsync());
+    return TypedResults.Ok(
+        await db.Todos
+            .Where(t => t.IsComplete)
+            .Select(x => new TodoItemDTO(x))
+            .ToListAsync()
+    );
 }
 
 static async Task<IResult> GetTodo(int id, TodoDb db)
@@ -62,12 +74,14 @@ static async Task<IResult> GetTodo(int id, TodoDb db)
         : TypedResults.NotFound();
 }
 
+//DTO defines what the clien can send. Layer of protection from the Model
+//In this case Id property cannot be sent by the client.
 static async Task<IResult> CreateTodo(TodoItemDTO todoItemDTO, TodoDb db)
 {
     var todoItem = new Todo
     {
-        IsComplete = todoItemDTO.IsComplete,
-        Name = todoItemDTO.Name
+        Name = todoItemDTO.Name,
+        IsComplete = todoItemDTO.IsComplete
     };
 
     db.Todos.Add(todoItem);
@@ -76,14 +90,13 @@ static async Task<IResult> CreateTodo(TodoItemDTO todoItemDTO, TodoDb db)
     return TypedResults.Created($"/todoitems/{todoItem.Id}",todoItemDTO);
 }
 
-static async Task<IResult> UpdateTodo(int id, Todo inputTodo, TodoDb db)
+static async Task<IResult> UpdateTodo(int id, TodoItemDTO todoItemDTO, TodoDb db)
 {
     var todo = await db.Todos.FindAsync(id);
-    
-    if (todo is null) return TypedResults.NotFound();
+    if(todo is null) return TypedResults.NotFound();
 
-    todo.Name = inputTodo.Name;
-    todo.IsComplete = inputTodo.IsComplete;
+    todo.Name = todoItemDTO.Name;
+    todo.IsComplete = todoItemDTO.IsComplete;
 
     await db.SaveChangesAsync();
 
