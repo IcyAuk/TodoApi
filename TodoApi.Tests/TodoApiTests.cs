@@ -4,6 +4,8 @@ using Xunit;
 
 //IClassFeature -> create one instance for all tests
 //webapplicationfactory<program> -> spin up api in-memory
+//xUnit makes uses of interface implementation to inject IClassFixture into the constructor
+//It must be noted that this abnormal behavior is specific to test framework xUnit.
 public class TodoApiTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly HttpClient _client;
