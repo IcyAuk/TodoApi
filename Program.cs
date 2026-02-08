@@ -124,3 +124,7 @@ static async Task<IResult> DeleteTodo(int id, TodoDb db)
 }
 
 app.Run();
+
+//partial means its code is spread across multiple files.
+//Assembled as one during compiling
+public partial class Program {}
