@@ -9,9 +9,10 @@ Primary goal:
 ## Stack
 - ASP.NET Core 9
 - EF Core
-- SQL Server
+- SQL Server & InMemory
 - Swagger
 - Docker & Docker Compose
+- xUnit
 
 docker compose up -d --build
 Then go to /swagger
